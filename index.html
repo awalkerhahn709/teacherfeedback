@@ -52,6 +52,10 @@
 
   /* ---- setup screen ---- */
   .setup-wrap { width: 100%; max-width: 480px; margin-top: 60px; }
+  .privacy-footer {
+    margin-top: 22px; padding-bottom: 20px; text-align: center;
+    font-size: 11.5px; line-height: 1.5; color: var(--chalk-dim); opacity: 0.75;
+  }
   .card {
     background: var(--board-dark); border: 1px solid var(--line);
     border-radius: 16px; padding: 28px;
@@ -435,6 +439,7 @@
           <div id="q-error"></div>
           <button class="btn-primary" id="start-btn">Start check-in</button>
         </div>
+        <div class="privacy-footer">🔒 No data is collected or sent anywhere. All questions and responses are stored locally on this device only.</div>
       </div>
     `);
 
