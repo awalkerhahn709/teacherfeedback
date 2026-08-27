@@ -90,7 +90,7 @@
   .type-btn.selected { border-color: var(--yellow); color: var(--chalk); background: rgba(232,185,74,0.1); }
 
   /* ---- mode toggle + custom answer builder ---- */
-  .mode-toggle { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 18px; }
+  .mode-toggle { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 18px; }
   .mode-btn {
     background: rgba(242,237,225,0.04); border: 1.5px solid var(--line);
     color: var(--chalk-dim); font-weight: 700; font-size: 12.5px; padding: 12px 6px;
@@ -100,6 +100,9 @@
 
   .custom-builder { margin-top: 18px; }
   .custom-builder .eyebrow { margin-top: 0; }
+  .traffic-row { display: flex; gap: 10px; align-items: center; margin-top: 8px; }
+  .traffic-dot { width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0; }
+  .traffic-row input[type="text"] { flex: 1; }
   .custom-row { display: flex; gap: 8px; margin-top: 8px; align-items: center; }
   .custom-row input[type="text"] { flex: 1; }
   .remove-answer-btn {
@@ -140,6 +143,7 @@
   }
   .smiley-btn:active { transform: scale(0.95); border-color: var(--yellow); background: rgba(242,237,225,0.1); }
   .smiley-btn svg { width: 58%; max-width: 100px; filter: url(#chalkTexture); }
+  .smiley-btn .cap { font-size: clamp(11px, 1.5vw, 14px); font-weight: 700; color: var(--chalk-dim); text-align: center; line-height: 1.25; margin-top: 8px; }
   .smiley-btn:disabled { opacity: 0.4; }
 
   .custom-btn {
@@ -367,6 +371,19 @@
     for (let i = 1; i <= 5; i++) opts.push({ id: i, label: `${i} star${i === 1 ? '' : 's'}`, color: colorAtT((i - 1) / 4) });
     return opts;
   }
+  function buildYesNoOptions() {
+    return [
+      { id: 1, label: 'Yes', color: '#8fd19e' },
+      { id: 2, label: 'No', color: '#e0745c' }
+    ];
+  }
+  function buildTrafficOptions() {
+    return [
+      { id: 1, label: 'Keep going', color: '#8fd19e' },
+      { id: 2, label: 'Slow down', color: '#e8b94a' },
+      { id: 3, label: 'Stop', color: '#e0745c' }
+    ];
+  }
 
   const ICONS = {
     1: `<svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="26" fill="none" stroke="#e0745c" stroke-width="2.5"/><circle cx="21" cy="25" r="2.2" fill="#e0745c"/><circle cx="39" cy="25" r="2.2" fill="#e0745c"/><path d="M20 42 Q30 33 40 42" fill="none" stroke="#e0745c" stroke-width="2.5" stroke-linecap="round"/></svg>`,
@@ -376,12 +393,26 @@
     check: `<svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="26" fill="none" stroke="#e8b94a" stroke-width="2.5"/><path d="M18 31 L26 39 L42 21" fill="none" stroke="#e8b94a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`
   };
 
+  const YESNO_ICONS = {
+    1: `<svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="26" fill="none" stroke="#8fd19e" stroke-width="2.5"/><path d="M18 31 L26 39 L42 21" fill="none" stroke="#8fd19e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    2: `<svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="26" fill="none" stroke="#e0745c" stroke-width="2.5"/><path d="M21 21 L39 39 M39 21 L21 39" stroke="#e0745c" stroke-width="3" stroke-linecap="round"/></svg>`
+  };
+
+  const TRAFFIC_ICONS = {
+    1: `<svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="26" fill="none" stroke="#8fd19e" stroke-width="2.5"/><circle cx="30" cy="30" r="16" fill="#8fd19e"/></svg>`,
+    2: `<svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="26" fill="none" stroke="#e8b94a" stroke-width="2.5"/><circle cx="30" cy="30" r="16" fill="#e8b94a"/></svg>`,
+    3: `<svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="26" fill="none" stroke="#e0745c" stroke-width="2.5"/><circle cx="30" cy="30" r="16" fill="#e0745c"/></svg>`
+  };
+
+  const ICON_SETS = { smiley: ICONS, yesno: YESNO_ICONS, traffic: TRAFFIC_ICONS };
+
   const STORAGE_KEY = 'kiosk-session';
   // session shape: { question, mode: 'smiley'|'scale10'|'custom', checkinType, options: [{id,label,color}], counts: {id: n}, active }
   let session = null;
   let setupType = 'confidence';
   let setupMode = 'smiley';
   let customAnswers = ['', ''];
+  let trafficLabels = ['Keep going', 'Slow down', 'Stop'];
 
   // This is a single-device kiosk (one iPad by the door), so plain localStorage
   // is all that's needed -- no account, no login, no network required.
@@ -404,6 +435,7 @@
     setupType = 'confidence';
     setupMode = 'smiley';
     customAnswers = ['', ''];
+    trafficLabels = ['Keep going', 'Slow down', 'Stop'];
     const initialQuestion = prefillQuestion || CHECKIN_TYPES[setupType].defaultQuestion;
 
     render(`
@@ -427,6 +459,8 @@
             <button class="mode-btn selected" id="mode-smiley" type="button">😊 Smileys</button>
             <button class="mode-btn" id="mode-scale" type="button">🔢 1–10 scale</button>
             <button class="mode-btn" id="mode-star" type="button">⭐ Star rating</button>
+            <button class="mode-btn" id="mode-yesno" type="button">✅ Yes/No</button>
+            <button class="mode-btn" id="mode-traffic" type="button">🚦 Traffic Light</button>
             <button class="mode-btn" id="mode-custom" type="button">✏️ My own</button>
           </div>
 
@@ -434,6 +468,22 @@
             <div class="eyebrow" style="margin-top:18px;">Answer choices</div>
             <div id="custom-rows"></div>
             <button class="btn-ghost" id="add-answer-btn" type="button">+ Add another answer</button>
+          </div>
+
+          <div class="custom-builder" id="traffic-builder" style="display:none;">
+            <div class="eyebrow" style="margin-top:18px;">Label each light</div>
+            <div class="traffic-row">
+              <span class="traffic-dot" style="background:#8fd19e;"></span>
+              <input type="text" class="traffic-label-input" data-idx="0" placeholder="Keep going" value="${escapeAttr(trafficLabels[0])}" />
+            </div>
+            <div class="traffic-row">
+              <span class="traffic-dot" style="background:#e8b94a;"></span>
+              <input type="text" class="traffic-label-input" data-idx="1" placeholder="Slow down" value="${escapeAttr(trafficLabels[1])}" />
+            </div>
+            <div class="traffic-row">
+              <span class="traffic-dot" style="background:#e0745c;"></span>
+              <input type="text" class="traffic-label-input" data-idx="2" placeholder="Stop" value="${escapeAttr(trafficLabels[2])}" />
+            </div>
           </div>
 
           <div id="q-error"></div>
@@ -466,11 +516,18 @@
     qInput.setSelectionRange(qInput.value.length, qInput.value.length);
 
     const builder = document.getElementById('custom-builder');
+    const trafficBuilder = document.getElementById('traffic-builder');
     const smileyBtn = document.getElementById('mode-smiley');
     const scaleBtn = document.getElementById('mode-scale');
     const starBtn = document.getElementById('mode-star');
+    const yesnoBtn = document.getElementById('mode-yesno');
+    const trafficBtn = document.getElementById('mode-traffic');
     const customBtn = document.getElementById('mode-custom');
-    const allModeBtns = [smileyBtn, scaleBtn, starBtn, customBtn];
+    const allModeBtns = [smileyBtn, scaleBtn, starBtn, yesnoBtn, trafficBtn, customBtn];
+
+    document.querySelectorAll('.traffic-label-input').forEach(inp => {
+      inp.oninput = () => { trafficLabels[parseInt(inp.dataset.idx, 10)] = inp.value; };
+    });
 
     function renderCustomRows() {
       const rowsEl = document.getElementById('custom-rows');
@@ -505,24 +562,42 @@
       allModeBtns.forEach(b => b.classList.remove('selected'));
       smileyBtn.classList.add('selected');
       builder.style.display = 'none';
+      trafficBuilder.style.display = 'none';
     };
     scaleBtn.onclick = () => {
       setupMode = 'scale10';
       allModeBtns.forEach(b => b.classList.remove('selected'));
       scaleBtn.classList.add('selected');
       builder.style.display = 'none';
+      trafficBuilder.style.display = 'none';
     };
     starBtn.onclick = () => {
       setupMode = 'star5';
       allModeBtns.forEach(b => b.classList.remove('selected'));
       starBtn.classList.add('selected');
       builder.style.display = 'none';
+      trafficBuilder.style.display = 'none';
+    };
+    yesnoBtn.onclick = () => {
+      setupMode = 'yesno';
+      allModeBtns.forEach(b => b.classList.remove('selected'));
+      yesnoBtn.classList.add('selected');
+      builder.style.display = 'none';
+      trafficBuilder.style.display = 'none';
+    };
+    trafficBtn.onclick = () => {
+      setupMode = 'traffic';
+      allModeBtns.forEach(b => b.classList.remove('selected'));
+      trafficBtn.classList.add('selected');
+      builder.style.display = 'none';
+      trafficBuilder.style.display = 'block';
     };
     customBtn.onclick = () => {
       setupMode = 'custom';
       allModeBtns.forEach(b => b.classList.remove('selected'));
       customBtn.classList.add('selected');
       builder.style.display = 'block';
+      trafficBuilder.style.display = 'none';
     };
 
     document.getElementById('start-btn').onclick = async () => {
@@ -547,6 +622,15 @@
       } else if (setupMode === 'star5') {
         mode = 'star5';
         options = buildStarOptions();
+      } else if (setupMode === 'yesno') {
+        mode = 'yesno';
+        options = buildYesNoOptions();
+      } else if (setupMode === 'traffic') {
+        mode = 'traffic';
+        options = buildTrafficOptions().map((o, i) => ({
+          ...o,
+          label: (trafficLabels[i] || '').trim() || o.label
+        }));
       } else {
         mode = 'smiley';
         options = buildSmileyOptions(setupType);
@@ -565,10 +649,13 @@
   const STAR_ICON_PATH = 'M12 2l2.9 6.26L22 9.27l-5 4.87L18.18 21 12 17.27 5.82 21 7 14.14l-5-4.87 7.1-1.01L12 2z';
 
   function renderOptionButton(o) {
-    if (session.mode === 'smiley') {
+    const iconSet = ICON_SETS[session.mode];
+    if (iconSet) {
+      const showCaption = session.mode === 'traffic';
       return `
         <button class="smiley-btn" data-val="${o.id}" aria-label="${escapeHtml(o.label.replace('\n', ' '))}">
-          ${ICONS[o.id]}
+          ${iconSet[o.id]}
+          ${showCaption ? `<div class="cap">${escapeHtml(o.label)}</div>` : ''}
         </button>`;
     }
     return `
@@ -732,7 +819,7 @@
 
   // ---------------- teacher panel ----------------
   function showTeacherPanel() {
-    const isSmiley = session.mode === 'smiley';
+    const iconSet = ICON_SETS[session.mode];
     const counts = session.counts;
     const total = session.options.reduce((sum, o) => sum + (counts[o.id] || 0), 0);
     const max = Math.max(1, ...session.options.map(o => counts[o.id] || 0));
@@ -747,8 +834,8 @@
           ${session.options.map(o => {
             const c = counts[o.id] || 0;
             const widthPct = Math.round((c / max) * 100);
-            const marker = isSmiley
-              ? ICONS[o.id]
+            const marker = iconSet
+              ? iconSet[o.id]
               : `<div class="bar-label" style="color:${o.color};">${escapeHtml(o.label)}</div>`;
             return `
               <div class="bar-row">
@@ -762,6 +849,7 @@
         <div class="total-line">${total === 0 ? 'No responses yet.' : total + ' response' + (total === 1 ? '' : 's') + ' so far'}</div>
         <div class="modal-actions">
           <button class="btn-primary" id="close-panel">Back to kiosk</button>
+          <button class="btn-ghost" id="download-results">⬇ Download results (CSV)</button>
           <button class="btn-ghost" id="new-question">Ask a new question</button>
           <button class="btn-danger-outline" id="reset-counts">Reset counts (keep question)</button>
         </div>
@@ -770,6 +858,7 @@
     appRoot.appendChild(backdrop);
 
     backdrop.querySelector('#close-panel').onclick = () => backdrop.remove();
+    backdrop.querySelector('#download-results').onclick = () => downloadResultsCsv();
     backdrop.querySelector('#new-question').onclick = () => {
       backdrop.remove();
       showSetup('');
@@ -782,6 +871,40 @@
       backdrop.remove();
       showTeacherPanel();
     };
+  }
+
+  function csvEscape(field) {
+    const str = String(field === undefined || field === null ? '' : field);
+    if (/[",\n]/.test(str)) return '"' + str.replace(/"/g, '""') + '"';
+    return str;
+  }
+
+  function downloadResultsCsv() {
+    const counts = session.counts;
+    const total = session.options.reduce((sum, o) => sum + (counts[o.id] || 0), 0);
+    const typeLabel = (CHECKIN_TYPES[session.checkinType] || {}).label || 'Check-in';
+
+    const rows = [
+      ['Check-in type', typeLabel],
+      ['Question', session.question],
+      [],
+      ['Answer', 'Count'],
+      ...session.options.map(o => [o.label.replace(/\n/g, ' '), counts[o.id] || 0]),
+      [],
+      ['Total responses', total]
+    ];
+    const csv = rows.map(r => r.map(csvEscape).join(',')).join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = new Date().toISOString().slice(0, 16).replace('T', '_').replace(':', '-');
+    a.href = url;
+    a.download = `checkin-results-${stamp}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   // ---------------- boot ----------------
