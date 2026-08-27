@@ -505,14 +505,12 @@
           input.value = CHECKIN_TYPES[setupType].defaultQuestion;
         }
         input.placeholder = CHECKIN_TYPES[setupType].placeholder;
-        input.focus();
         const len = input.value.length;
         input.setSelectionRange(len, len);
       };
     });
 
     const qInput = document.getElementById('q-input');
-    qInput.focus();
     qInput.setSelectionRange(qInput.value.length, qInput.value.length);
 
     const builder = document.getElementById('custom-builder');
