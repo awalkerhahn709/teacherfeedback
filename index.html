@@ -158,16 +158,10 @@
     background: rgba(242,237,225,0.06); border: 1.5px solid var(--line);
     color: var(--chalk-dim); font-weight: 700; font-size: 12.5px;
     padding: 10px 16px; border-radius: 10px;
-    display: flex; align-items: center; gap: 8px;
-    overflow: hidden;
+    touch-action: manipulation;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
   }
-  .finish-btn .progress-fill {
-    position: absolute; inset: 0; background: var(--yellow); opacity: 0.35;
-    width: 0%; transition: none; z-index: 0;
-  }
-  .finish-btn span { position: relative; z-index: 1; }
-  .finish-btn.pressing { border-color: var(--yellow); color: var(--chalk); }
-  .finish-btn.pressing .progress-fill { transition: width 1.4s linear; width: 100%; }
+  .finish-btn.armed { border-color: var(--yellow); color: var(--chalk); background: rgba(232,185,74,0.18); }
 
   /* teacher modal */
   .modal-backdrop {
@@ -234,7 +228,6 @@
   const STORAGE_KEY = 'kiosk-session';
   // session shape: { question, mode: 'smiley'|'custom', options: [{id,label,color}], counts: {id: n}, active }
   let session = null;
-  let longPressTimer = null;
   let setupMode = 'smiley';
   let customAnswers = ['', ''];
 
@@ -382,10 +375,7 @@
           `).join('')}
         </div>
       </div>
-      <button class="finish-btn" id="teacher-dot">
-        <div class="progress-fill"></div>
-        <span>Finish (hold)</span>
-      </button>
+      <button class="finish-btn" id="teacher-dot">Finish (double-tap)</button>
     `);
 
     root.querySelectorAll('.smiley-btn, .custom-btn').forEach(btn => {
@@ -416,30 +406,28 @@
   function setupTeacherDot() {
     const btn = document.getElementById('teacher-dot');
     if (!btn) return;
-    const fill = btn.querySelector('.progress-fill');
-    const start = (e) => {
+    let lastTap = 0;
+    let armedResetTimer = null;
+    const DOUBLE_TAP_WINDOW = 400; // ms
+
+    btn.addEventListener('click', (e) => {
       e.preventDefault();
-      fill.style.transition = 'none';
-      fill.style.width = '0%';
-      void fill.offsetWidth; // force reflow so the transition restarts cleanly
-      btn.classList.add('pressing');
-      longPressTimer = setTimeout(() => {
-        btn.classList.remove('pressing');
-        fill.style.transition = 'none';
-        fill.style.width = '0%';
+      const now = Date.now();
+      if (now - lastTap < DOUBLE_TAP_WINDOW) {
+        lastTap = 0;
+        btn.classList.remove('armed');
+        if (armedResetTimer) { clearTimeout(armedResetTimer); armedResetTimer = null; }
         showTeacherPanel();
-      }, 1400);
-    };
-    const cancel = () => {
-      btn.classList.remove('pressing');
-      fill.style.transition = 'none';
-      fill.style.width = '0%';
-      if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
-    };
-    btn.addEventListener('pointerdown', start);
-    btn.addEventListener('pointerup', cancel);
-    btn.addEventListener('pointerleave', cancel);
-    btn.addEventListener('pointercancel', cancel);
+      } else {
+        lastTap = now;
+        btn.classList.add('armed');
+        if (armedResetTimer) clearTimeout(armedResetTimer);
+        armedResetTimer = setTimeout(() => {
+          btn.classList.remove('armed');
+          lastTap = 0;
+        }, DOUBLE_TAP_WINDOW);
+      }
+    });
   }
 
   // ---------------- teacher panel ----------------
