@@ -38,7 +38,8 @@
     flex-direction: column;
     align-items: center;
     position: relative;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .chalk-title { font-family: 'Kalam', cursive; font-weight: 700; filter: url(#chalkTexture); }
@@ -75,7 +76,7 @@
   .error-msg { color: #e0745c; font-size: 13px; margin-top: 8px; }
 
   /* ---- check-in type grid ---- */
-  .type-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 8px; }
+  .type-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 8px; }
   .type-btn {
     background: rgba(242,237,225,0.04); border: 1.5px solid var(--line);
     color: var(--chalk-dim); font-weight: 700; font-size: 13px; padding: 14px 10px;
@@ -212,6 +213,16 @@
   }
   .finish-btn.armed { border-color: var(--yellow); color: var(--chalk); background: rgba(232,185,74,0.18); }
 
+  .start-over-btn {
+    position: absolute; bottom: 16px; left: 16px;
+    background: rgba(242,237,225,0.06); border: 1.5px solid var(--line);
+    color: var(--chalk-dim); font-weight: 700; font-size: 12.5px;
+    padding: 10px 16px; border-radius: 10px;
+    touch-action: manipulation;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  }
+  .start-over-btn.armed { border-color: var(--yellow); color: var(--chalk); background: rgba(232,185,74,0.18); }
+
   /* teacher modal */
   .modal-backdrop {
     position: absolute; inset: 0; background: rgba(0,0,0,0.55);
@@ -285,6 +296,41 @@
       defaultQuestion: "How would you rank your effort level today?",
       placeholder: "Type your question",
       smileyLabels: ["Barely\ntried", "Could do\nbetter", "Good\neffort", "Gave it\nmy all"]
+    },
+    presentation: {
+      label: "Presentation Check",
+      emoji: "🎤",
+      defaultQuestion: "How would you rank the presentation today?",
+      placeholder: "Type your question",
+      smileyLabels: ["Needs\nwork", "Okay", "Good", "Excellent"]
+    },
+    value: {
+      label: "Value of Information",
+      emoji: "💎",
+      defaultQuestion: "How valuable did you find today's information?",
+      placeholder: "Type your question",
+      smileyLabels: ["Not\nvaluable", "Somewhat\nvaluable", "Valuable", "Very\nvaluable"]
+    },
+    priorKnowledge: {
+      label: "Prior Knowledge Check",
+      emoji: "🧠",
+      defaultQuestion: "How familiar are you with the topic of ",
+      placeholder: "Type your question",
+      smileyLabels: ["Never\nheard of it", "A little\nfamiliar", "Pretty\nfamiliar", "Know it\nwell"]
+    },
+    pace: {
+      label: "Pace Check",
+      emoji: "⏱️",
+      defaultQuestion: "How was the pace of today's lesson?",
+      placeholder: "Type your question",
+      smileyLabels: ["Too\nslow", "A bit\nslow", "Just\nright", "Too\nfast"]
+    },
+    homework: {
+      label: "Homework Check",
+      emoji: "📓",
+      defaultQuestion: "Did you complete the homework in preparation for today?",
+      placeholder: "Type your question",
+      smileyLabels: ["Didn't\nstart", "Partially\ndone", "Mostly\ndone", "Completed\nit all"]
     }
   };
   const CUSTOM_COLORS = ["#e0745c", "#e8b94a", "#7fa89a", "#8fd19e", "#9b8ec4", "#e39a54"];
@@ -564,6 +610,7 @@
         <div class="kiosk-question">${escapeHtml(session.question)}</div>
         ${bodyHtml}
       </div>
+      <button class="start-over-btn" id="start-over-dot">Start over (double-tap)</button>
       <button class="finish-btn" id="teacher-dot">Finish (double-tap)</button>
     `);
 
@@ -584,6 +631,7 @@
     }
 
     setupTeacherDot();
+    setupStartOverDot();
   }
 
   function setupScaleSlider() {
@@ -641,8 +689,7 @@
     }, 1100);
   }
 
-  function setupTeacherDot() {
-    const btn = document.getElementById('teacher-dot');
+  function bindDoubleTap(btn, onDoubleTap) {
     if (!btn) return;
     let lastTap = 0;
     let armedResetTimer = null;
@@ -655,7 +702,7 @@
         lastTap = 0;
         btn.classList.remove('armed');
         if (armedResetTimer) { clearTimeout(armedResetTimer); armedResetTimer = null; }
-        showTeacherPanel();
+        onDoubleTap();
       } else {
         lastTap = now;
         btn.classList.add('armed');
@@ -665,6 +712,16 @@
           lastTap = 0;
         }, DOUBLE_TAP_WINDOW);
       }
+    });
+  }
+
+  function setupTeacherDot() {
+    bindDoubleTap(document.getElementById('teacher-dot'), showTeacherPanel);
+  }
+
+  function setupStartOverDot() {
+    bindDoubleTap(document.getElementById('start-over-dot'), () => {
+      showSetup('');
     });
   }
 
