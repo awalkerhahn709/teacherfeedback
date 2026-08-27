@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Confidence Check-In</title>
+<!-- Lets students add this to the iPad Home Screen and open it full-screen, no browser bar -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; background: #2b3d36; }
+  :root {
+    --board: #2b3d36;
+    --board-dark: #223129;
+    --chalk: #f2ede1;
+    --chalk-dim: #c9c2b2;
+    --yellow: #e8b94a;
+    --line: rgba(242,237,225,0.16);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+
+  #app-root {
+    font-family: 'Nunito', sans-serif;
+    background: var(--board);
+    background-image:
+      radial-gradient(ellipse at 20% 10%, rgba(255,255,255,0.03), transparent 40%),
+      radial-gradient(ellipse at 80% 90%, rgba(255,255,255,0.02), transparent 40%);
+    color: var(--chalk);
+    height: 100%;
+    width: 100%;
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .chalk-title { font-family: 'Kalam', cursive; font-weight: 700; filter: url(#chalkTexture); }
+
+  .eyebrow {
+    font-family: 'Nunito', sans-serif; font-size: 11px; font-weight: 800;
+    letter-spacing: 2.5px; text-transform: uppercase; color: var(--yellow);
+    opacity: 0.85; margin-bottom: 6px;
+  }
+
+  /* ---- setup screen ---- */
+  .setup-wrap { width: 100%; max-width: 480px; margin-top: 60px; }
+  .card {
+    background: var(--board-dark); border: 1px solid var(--line);
+    border-radius: 16px; padding: 28px;
+  }
+  input[type="text"] {
+    width: 100%; background: rgba(242,237,225,0.06); border: 1.5px solid var(--line);
+    border-radius: 10px; padding: 14px 16px; font-family: 'Nunito', sans-serif;
+    font-size: 16px; color: var(--chalk); outline: none;
+  }
+  input[type="text"]:focus { border-color: var(--yellow); }
+  input[type="text"]::placeholder { color: var(--chalk-dim); }
+  button { font-family: 'Nunito', sans-serif; cursor: pointer; border: none; }
+  .btn-primary {
+    background: var(--yellow); color: var(--board-dark); font-weight: 800; font-size: 15px;
+    padding: 13px 22px; border-radius: 10px; margin-top: 16px; width: 100%;
+  }
+  .btn-primary:disabled { opacity: 0.45; }
+  .btn-ghost {
+    background: transparent; color: var(--chalk-dim); border: 1.5px solid var(--line);
+    font-weight: 700; font-size: 13px; padding: 10px 18px; border-radius: 10px; margin-top: 10px; width: 100%;
+  }
+  .error-msg { color: #e0745c; font-size: 13px; margin-top: 8px; }
+
+  /* ---- kiosk screen ---- */
+  .kiosk-wrap {
+    width: 100%; height: 100%; min-height: 78vh;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .kiosk-question {
+    font-family: 'Kalam', cursive; font-size: clamp(22px, 4vw, 36px);
+    text-align: center; line-height: 1.3; filter: url(#chalkTexture);
+    max-width: 780px; margin-top: 8px;
+  }
+  .kiosk-sub { font-size: 13px; color: var(--chalk-dim); margin-top: 8px; letter-spacing: 0.3px; }
+
+  .smiley-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px;
+    width: 100%; max-width: 900px; flex: 1; margin-top: 34px; align-items: stretch;
+  }
+  @media (max-width: 700px) {
+    .smiley-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .smiley-btn {
+    background: rgba(242,237,225,0.04); border: 1.5px solid var(--line); border-radius: 20px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    padding: 24px 10px; min-height: 190px;
+    transition: transform 0.1s ease, border-color 0.1s ease, background 0.1s ease;
+  }
+  .smiley-btn:active { transform: scale(0.95); border-color: var(--yellow); background: rgba(242,237,225,0.1); }
+  .smiley-btn svg { width: 30%; max-width: 84px; filter: url(#chalkTexture); }
+  .smiley-btn .cap { font-size: clamp(12px, 1.6vw, 15px); font-weight: 700; color: var(--chalk-dim); text-align: center; line-height: 1.3; }
+  .smiley-btn:disabled { opacity: 0.4; }
+
+  /* thank-you overlay */
+  .thanks-overlay {
+    position: absolute; inset: 0; background: var(--board);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    animation: fadeIn 0.15s ease;
+  }
+  .thanks-overlay svg { width: 90px; height: 90px; filter: url(#chalkTexture); }
+  .thanks-overlay .msg { font-family: 'Kalam', cursive; font-size: 26px; margin-top: 14px; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  /* teacher trigger button */
+  .finish-btn {
+    position: absolute; bottom: 16px; right: 16px;
+    background: rgba(242,237,225,0.06); border: 1.5px solid var(--line);
+    color: var(--chalk-dim); font-weight: 700; font-size: 12.5px;
+    padding: 10px 16px; border-radius: 10px;
+    display: flex; align-items: center; gap: 8px;
+    overflow: hidden;
+  }
+  .finish-btn .progress-fill {
+    position: absolute; inset: 0; background: var(--yellow); opacity: 0.35;
+    width: 0%; transition: none; z-index: 0;
+  }
+  .finish-btn span { position: relative; z-index: 1; }
+  .finish-btn.pressing { border-color: var(--yellow); color: var(--chalk); }
+  .finish-btn.pressing .progress-fill { transition: width 1.4s linear; width: 100%; }
+
+  /* teacher modal */
+  .modal-backdrop {
+    position: absolute; inset: 0; background: rgba(0,0,0,0.55);
+    display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 20;
+  }
+  .modal-card {
+    background: var(--board-dark); border: 1px solid var(--line); border-radius: 16px;
+    padding: 26px; width: 100%; max-width: 460px; max-height: 85vh; overflow-y: auto;
+  }
+  .bars { margin-top: 18px; display: flex; flex-direction: column; gap: 14px; }
+  .bar-row { display: flex; align-items: center; gap: 12px; }
+  .bar-row svg { width: 26px; height: 26px; flex-shrink: 0; filter: url(#chalkTexture); }
+  .bar-track { flex: 1; background: rgba(242,237,225,0.07); border-radius: 8px; height: 24px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 8px; transition: width 0.4s ease; }
+  .bar-count { width: 40px; text-align: right; font-weight: 800; font-size: 14px; }
+  .total-line { margin-top: 14px; font-size: 13px; color: var(--chalk-dim); text-align: center; }
+  .modal-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 20px; }
+  .btn-danger-outline {
+    background: transparent; color: #e0745c; border: 1.5px solid #e0745c;
+    font-weight: 700; font-size: 13px; padding: 10px 14px; border-radius: 8px; width: 100%;
+  }
+</style>
+</head>
+<body>
+
+<div id="app-root">
+  <svg width="0" height="0" style="position:absolute">
+    <filter id="chalkTexture" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" result="noise" seed="7"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.6"/>
+    </filter>
+  </svg>
+  <div id="content" style="width:100%; height:100%; display:flex; flex-direction:column; align-items:center; flex:1;"></div>
+</div>
+
+<script>
+(function () {
+  const root = document.getElementById('content');
+  const appRoot = document.getElementById('app-root');
+
+  const OPTIONS = [
+    { id: 1, label: "Not\nconfident", color: "#e0745c" },
+    { id: 2, label: "A little\nunsure",  color: "#e8b94a" },
+    { id: 3, label: "Pretty\nconfident", color: "#7fa89a" },
+    { id: 4, label: "Very\nconfident",   color: "#8fd19e" },
+  ];
+
+  const ICONS = {
+    1: `<svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="26" fill="none" stroke="#e0745c" stroke-width="2.5"/><circle cx="21" cy="25" r="2.2" fill="#e0745c"/><circle cx="39" cy="25" r="2.2" fill="#e0745c"/><path d="M20 42 Q30 33 40 42" fill="none" stroke="#e0745c" stroke-width="2.5" stroke-linecap="round"/></svg>`,
+    2: `<svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="26" fill="none" stroke="#e8b94a" stroke-width="2.5"/><circle cx="21" cy="25" r="2.2" fill="#e8b94a"/><circle cx="39" cy="25" r="2.2" fill="#e8b94a"/><path d="M20 39 Q30 36 40 39" fill="none" stroke="#e8b94a" stroke-width="2.5" stroke-linecap="round"/></svg>`,
+    3: `<svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="26" fill="none" stroke="#7fa89a" stroke-width="2.5"/><circle cx="21" cy="25" r="2.2" fill="#7fa89a"/><circle cx="39" cy="25" r="2.2" fill="#7fa89a"/><path d="M20 36 Q30 45 40 36" fill="none" stroke="#7fa89a" stroke-width="2.5" stroke-linecap="round"/></svg>`,
+    4: `<svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="26" fill="none" stroke="#8fd19e" stroke-width="2.5"/><path d="M18 24 Q21 20 24 24" fill="none" stroke="#8fd19e" stroke-width="2.2" stroke-linecap="round"/><path d="M36 24 Q39 20 42 24" fill="none" stroke="#8fd19e" stroke-width="2.2" stroke-linecap="round"/><path d="M18 34 Q30 48 42 34" fill="none" stroke="#8fd19e" stroke-width="2.5" stroke-linecap="round"/></svg>`,
+    check: `<svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="26" fill="none" stroke="#e8b94a" stroke-width="2.5"/><path d="M18 31 L26 39 L42 21" fill="none" stroke="#e8b94a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+  };
+
+  const STORAGE_KEY = 'kiosk-session';
+  let session = null; // { question, counts:{1:0,2:0,3:0,4:0}, active:true }
+  let longPressTimer = null;
+
+  // This is a single-device kiosk (one iPad by the door), so plain localStorage
+  // is all that's needed -- no account, no login, no network required.
+  async function loadSession() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+  async function saveSession() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(session)); } catch (e) {}
+  }
+
+  function render(html) { root.innerHTML = html; }
+  function escapeHtml(s) { return s.replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+  function escapeAttr(s) { return escapeHtml(s || ''); }
+
+  // ---------------- setup screen ----------------
+  function showSetup(prefillQuestion) {
+    render(`
+      <div class="setup-wrap">
+        <div class="eyebrow">kiosk mode</div>
+        <div class="chalk-title" style="font-size:26px; margin-bottom:18px;">Set today's question</div>
+        <div class="card">
+          <input type="text" id="q-input" placeholder="e.g. How confident do you feel about today's lesson?" value="${escapeAttr(prefillQuestion || '')}" />
+          <div id="q-error"></div>
+          <button class="btn-primary" id="start-btn">Start kiosk</button>
+        </div>
+      </div>
+    `);
+    document.getElementById('start-btn').onclick = async () => {
+      const val = document.getElementById('q-input').value.trim();
+      if (!val) {
+        document.getElementById('q-error').innerHTML = '<div class="error-msg">Type a question before starting.</div>';
+        return;
+      }
+      session = { question: val, counts: { 1: 0, 2: 0, 3: 0, 4: 0 }, active: true };
+      await saveSession();
+      showKiosk();
+    };
+  }
+
+  // ---------------- kiosk screen ----------------
+  function showKiosk() {
+    render(`
+      <div class="kiosk-wrap">
+        <div class="eyebrow">as you head out, tap one</div>
+        <div class="kiosk-question">${escapeHtml(session.question)}</div>
+        <div class="smiley-grid">
+          ${OPTIONS.map(o => `
+            <button class="smiley-btn" data-val="${o.id}">
+              ${ICONS[o.id]}
+              <div class="cap">${o.label.replace('\n', '<br/>')}</div>
+            </button>
+          `).join('')}
+        </div>
+      </div>
+      <button class="finish-btn" id="teacher-dot">
+        <div class="progress-fill"></div>
+        <span>Finish (hold)</span>
+      </button>
+    `);
+
+    root.querySelectorAll('.smiley-btn').forEach(btn => {
+      btn.onclick = async () => {
+        root.querySelectorAll('.smiley-btn').forEach(b => b.disabled = true);
+        const val = parseInt(btn.dataset.val, 10);
+        session.counts[val] = (session.counts[val] || 0) + 1;
+        await saveSession();
+        showThanks();
+      };
+    });
+
+    setupTeacherDot();
+  }
+
+  function showThanks() {
+    const overlay = document.createElement('div');
+    overlay.className = 'thanks-overlay';
+    overlay.innerHTML = `${ICONS.check}<div class="msg">Thanks!</div>`;
+    appRoot.appendChild(overlay);
+    setTimeout(() => {
+      overlay.remove();
+      showKiosk();
+    }, 1100);
+  }
+
+  function setupTeacherDot() {
+    const btn = document.getElementById('teacher-dot');
+    if (!btn) return;
+    const fill = btn.querySelector('.progress-fill');
+    const start = (e) => {
+      e.preventDefault();
+      fill.style.transition = 'none';
+      fill.style.width = '0%';
+      void fill.offsetWidth; // force reflow so the transition restarts cleanly
+      btn.classList.add('pressing');
+      longPressTimer = setTimeout(() => {
+        btn.classList.remove('pressing');
+        fill.style.transition = 'none';
+        fill.style.width = '0%';
+        showTeacherPanel();
+      }, 1400);
+    };
+    const cancel = () => {
+      btn.classList.remove('pressing');
+      fill.style.transition = 'none';
+      fill.style.width = '0%';
+      if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+    };
+    btn.addEventListener('pointerdown', start);
+    btn.addEventListener('pointerup', cancel);
+    btn.addEventListener('pointerleave', cancel);
+    btn.addEventListener('pointercancel', cancel);
+  }
+
+  // ---------------- teacher panel ----------------
+  function showTeacherPanel() {
+    const counts = session.counts;
+    const total = OPTIONS.reduce((sum, o) => sum + (counts[o.id] || 0), 0);
+    const max = Math.max(1, ...OPTIONS.map(o => counts[o.id] || 0));
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop';
+    backdrop.innerHTML = `
+      <div class="modal-card">
+        <div class="eyebrow">Teacher view</div>
+        <div class="chalk-title" style="font-size:20px;">${escapeHtml(session.question)}</div>
+        <div class="bars">
+          ${OPTIONS.map(o => {
+            const c = counts[o.id] || 0;
+            const widthPct = Math.round((c / max) * 100);
+            return `
+              <div class="bar-row">
+                ${ICONS[o.id]}
+                <div class="bar-track"><div class="bar-fill" style="width:${widthPct}%; background:${o.color};"></div></div>
+                <div class="bar-count">${c}</div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+        <div class="total-line">${total === 0 ? 'No responses yet.' : total + ' response' + (total === 1 ? '' : 's') + ' so far'}</div>
+        <div class="modal-actions">
+          <button class="btn-primary" id="close-panel">Back to kiosk</button>
+          <button class="btn-ghost" id="new-question">Ask a new question</button>
+          <button class="btn-danger-outline" id="reset-counts">Reset counts (keep question)</button>
+        </div>
+      </div>
+    `;
+    appRoot.appendChild(backdrop);
+
+    backdrop.querySelector('#close-panel').onclick = () => backdrop.remove();
+    backdrop.querySelector('#new-question').onclick = () => {
+      backdrop.remove();
+      showSetup('');
+    };
+    backdrop.querySelector('#reset-counts').onclick = async () => {
+      session.counts = { 1: 0, 2: 0, 3: 0, 4: 0 };
+      await saveSession();
+      backdrop.remove();
+      showTeacherPanel();
+    };
+  }
+
+  // ---------------- boot ----------------
+  (async function init() {
+    session = await loadSession();
+    if (session && session.active && session.question) {
+      showKiosk();
+    } else {
+      showSetup();
+    }
+  })();
+})();
+</script>
+</body>
+</html>
