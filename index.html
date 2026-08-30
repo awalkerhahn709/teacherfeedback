@@ -413,6 +413,7 @@
   let setupMode = 'smiley';
   let customAnswers = ['', ''];
   let trafficLabels = ['Keep going', 'Slow down', 'Stop'];
+  let setupPeriod = '';
 
   // This is a single-device kiosk (one iPad by the door), so plain localStorage
   // is all that's needed -- no account, no login, no network required.
@@ -436,6 +437,7 @@
     setupMode = 'smiley';
     customAnswers = ['', ''];
     trafficLabels = ['Keep going', 'Slow down', 'Stop'];
+    setupPeriod = '';
     const initialQuestion = prefillQuestion || CHECKIN_TYPES[setupType].defaultQuestion;
 
     render(`
@@ -453,6 +455,11 @@
 
           <div class="eyebrow" style="margin-top:22px;">Question</div>
           <input type="text" id="q-input" placeholder="${escapeAttr(CHECKIN_TYPES[setupType].placeholder)}" value="${escapeAttr(initialQuestion)}" />
+
+          <div id="period-field">
+            <div class="eyebrow" style="margin-top:22px;">Class period (optional)</div>
+            <input type="text" id="period-input" placeholder="e.g. 3" value="${escapeAttr(setupPeriod)}" />
+          </div>
 
           <div class="eyebrow" style="margin-top:22px;">Answer type</div>
           <div class="mode-toggle">
@@ -512,6 +519,9 @@
 
     const qInput = document.getElementById('q-input');
     qInput.setSelectionRange(qInput.value.length, qInput.value.length);
+
+    const periodInput = document.getElementById('period-input');
+    periodInput.oninput = () => { setupPeriod = periodInput.value; };
 
     const builder = document.getElementById('custom-builder');
     const trafficBuilder = document.getElementById('traffic-builder');
@@ -637,7 +647,15 @@
       const counts = {};
       options.forEach(o => { counts[o.id] = 0; });
 
-      session = { question: val, mode, checkinType: setupType, options, counts, active: true };
+      session = {
+        question: val,
+        mode,
+        checkinType: setupType,
+        period: (setupPeriod || '').trim(),
+        options,
+        counts,
+        active: true
+      };
       await saveSession();
       showKiosk();
     };
@@ -828,6 +846,7 @@
       <div class="modal-card">
         <div class="eyebrow">Teacher view</div>
         <div class="chalk-title" style="font-size:20px;">${escapeHtml(session.question)}</div>
+        ${session.period ? `<div class="eyebrow" style="margin-top:6px;">Class period: ${escapeHtml(session.period)}</div>` : ''}
         <div class="bars">
           ${session.options.map(o => {
             const c = counts[o.id] || 0;
@@ -884,13 +903,16 @@
 
     const rows = [
       ['Check-in type', typeLabel],
-      ['Question', session.question],
+      ['Question', session.question]
+    ];
+    if (session.period) rows.push(['Class period', session.period]);
+    rows.push(
       [],
       ['Answer', 'Count'],
       ...session.options.map(o => [o.label.replace(/\n/g, ' '), counts[o.id] || 0]),
       [],
       ['Total responses', total]
-    ];
+    );
     const csv = rows.map(r => r.map(csvEscape).join(',')).join('\n');
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
