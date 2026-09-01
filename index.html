@@ -51,7 +51,7 @@
   }
 
   /* ---- setup screen ---- */
-  .setup-wrap { width: 100%; max-width: 480px; margin-top: 60px; }
+  .setup-wrap { width: 100%; max-width: 600px; margin-top: 60px; }
   .privacy-footer {
     margin-top: 22px; padding-bottom: 20px; text-align: center;
     font-size: 11.5px; line-height: 1.5; color: var(--chalk-dim); opacity: 0.75;
@@ -80,13 +80,13 @@
   .error-msg { color: #e0745c; font-size: 13px; margin-top: 8px; }
 
   /* ---- check-in type grid ---- */
-  .type-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 8px; }
+  .type-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 8px; }
   .type-btn {
     background: rgba(242,237,225,0.04); border: 1.5px solid var(--line);
-    color: var(--chalk-dim); font-weight: 700; font-size: 13px; padding: 14px 10px;
-    border-radius: 10px; text-align: center; line-height: 1.3;
+    color: var(--chalk-dim); font-weight: 700; font-size: 11.5px; padding: 12px 6px;
+    border-radius: 10px; text-align: center; line-height: 1.25;
   }
-  .type-btn .type-emoji { font-size: 20px; display: block; margin-bottom: 5px; }
+  .type-btn .type-emoji { font-size: 18px; display: block; margin-bottom: 4px; }
   .type-btn.selected { border-color: var(--yellow); color: var(--chalk); background: rgba(232,185,74,0.1); }
 
   /* ---- mode toggle + custom answer builder ---- */
@@ -200,6 +200,62 @@
   .star-pick:active svg { transform: scale(0.88); }
   .star-picker.locked .star-pick { pointer-events: none; }
 
+  /* ---- multi-question kiosk ---- */
+  .mq-kiosk-wrap { min-height: 78vh; display: flex; flex-direction: column; }
+  .mq-sections { width: 100%; max-width: 100%; display: flex; flex-direction: row; flex: 1; margin: 0 auto; }
+  .mq-section {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 14px 12px; border-right: 1px solid var(--line); gap: 12px; transition: opacity 0.2s ease;
+    min-width: 0;
+  }
+  .mq-section:last-child { border-right: none; }
+  .mq-section.mq-answered { opacity: 0.75; }
+
+  /* 3 or 4 questions: 2x2 quadrant grid (a 3rd question leaves the 4th cell empty) */
+  .mq-sections.mq-grid-2x2 {
+    display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr;
+  }
+  .mq-sections.mq-grid-2x2 .mq-section {
+    border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);
+  }
+  .mq-sections.mq-grid-2x2 .mq-section:nth-child(2n) { border-right: none; }
+  .mq-sections.mq-grid-2x2 .mq-section:nth-child(n+3) { border-bottom: none; }
+
+  .mq-question {
+    font-family: 'Kalam', cursive; font-weight: 700; text-align: center;
+    font-size: clamp(13px, 1.8vw, 19px); filter: url(#chalkTexture); max-width: 100%;
+  }
+  .mq-options-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-items: center; }
+
+  .mq-icon-btn {
+    background: rgba(242,237,225,0.05); border: 1.5px solid var(--line); border-radius: 50%;
+    width: clamp(38px, 6vw, 58px); height: clamp(38px, 6vw, 58px);
+    display: flex; align-items: center; justify-content: center; padding: 5px;
+    transition: border-color 0.12s ease, background 0.12s ease, opacity 0.12s ease;
+  }
+  .mq-icon-btn svg { width: 70%; height: 70%; filter: url(#chalkTexture); }
+  .mq-icon-btn:disabled { opacity: 0.35; }
+  .mq-icon-btn.mq-selected { border-color: var(--yellow); background: rgba(232,185,74,0.15); opacity: 1; }
+
+  .mq-chip-btn {
+    background: rgba(242,237,225,0.05); border: 1.5px solid var(--line);
+    border-top: 4px solid var(--opt-color, var(--yellow)); border-radius: 10px;
+    padding: 7px 10px; font-family: 'Nunito', sans-serif; font-weight: 700;
+    font-size: clamp(10.5px, 1.4vw, 13px); color: var(--chalk);
+    transition: border-color 0.12s ease, background 0.12s ease, opacity 0.12s ease;
+  }
+  .mq-chip-btn:disabled { opacity: 0.35; }
+  .mq-chip-btn.mq-selected { border-color: var(--yellow); background: rgba(232,185,74,0.15); opacity: 1; }
+
+  .mq-star-row { display: flex; gap: 5px; }
+  .mq-star-row .mq-star-pick { background: none; padding: 2px; }
+  .mq-star-row .mq-star-pick svg {
+    width: clamp(18px, 2.8vw, 30px); height: clamp(18px, 2.8vw, 30px);
+    fill: none; stroke: var(--chalk-dim); stroke-width: 1.5; filter: url(#chalkTexture);
+    transition: fill 0.12s ease, stroke 0.12s ease;
+  }
+  .mq-star-row .mq-star-pick.filled svg { fill: var(--yellow); stroke: var(--yellow); }
+
   /* thank-you overlay */
   .thanks-overlay {
     position: absolute; inset: 0; background: var(--board);
@@ -291,26 +347,12 @@
       placeholder: "e.g. Did today's lesson make sense?",
       smileyLabels: ["Totally\nlost", "Kind of\nfollowed", "Mostly\ngot it", "Got it\ncompletely"]
     },
-    mood: {
-      label: "Mood Check-In",
-      emoji: "💛",
-      defaultQuestion: "How are you feeling today?",
-      placeholder: "Type your question",
-      smileyLabels: ["Having a\nhard day", "Not my\nbest", "Pretty\ngood", "Great!"]
-    },
     behavior: {
       label: "Effort Self-Rating",
       emoji: "✏️",
       defaultQuestion: "How would you rank your effort level today?",
       placeholder: "Type your question",
       smileyLabels: ["Barely\ntried", "Could do\nbetter", "Good\neffort", "Gave it\nmy all"]
-    },
-    presentation: {
-      label: "Presentation Check",
-      emoji: "🎤",
-      defaultQuestion: "How would you rank the presentation today?",
-      placeholder: "Type your question",
-      smileyLabels: ["Needs\nwork", "Okay", "Good", "Excellent"]
     },
     value: {
       label: "Value of Information",
@@ -319,12 +361,33 @@
       placeholder: "Type your question",
       smileyLabels: ["Not\nvaluable", "Somewhat\nvaluable", "Valuable", "Very\nvaluable"]
     },
+    presentation: {
+      label: "Presentation Check",
+      emoji: "🎤",
+      defaultQuestion: "How would you rank the presentation today?",
+      placeholder: "Type your question",
+      smileyLabels: ["Needs\nwork", "Okay", "Good", "Excellent"]
+    },
     priorKnowledge: {
       label: "Prior Knowledge Check",
       emoji: "🧠",
       defaultQuestion: "How familiar are you with the topic of ",
       placeholder: "Type your question",
       smileyLabels: ["Never\nheard of it", "A little\nfamiliar", "Pretty\nfamiliar", "Know it\nwell"]
+    },
+    mood: {
+      label: "Mood Check-In",
+      emoji: "💛",
+      defaultQuestion: "How are you feeling today?",
+      placeholder: "Type your question",
+      smileyLabels: ["Having a\nhard day", "Not my\nbest", "Pretty\ngood", "Great!"]
+    },
+    homework: {
+      label: "Homework Check",
+      emoji: "📓",
+      defaultQuestion: "Did you complete the homework in preparation for today?",
+      placeholder: "Type your question",
+      smileyLabels: ["Didn't\nstart", "Partially\ndone", "Mostly\ndone", "Completed\nit all"]
     },
     pace: {
       label: "Pace Check",
@@ -333,17 +396,19 @@
       placeholder: "Type your question",
       smileyLabels: ["Too\nslow", "A bit\nslow", "Just\nright", "Too\nfast"]
     },
-    homework: {
-      label: "Homework Check",
-      emoji: "📓",
-      defaultQuestion: "Did you complete the homework in preparation for today?",
+    multi: {
+      label: "Multiple Questions",
+      emoji: "📋",
+      defaultQuestion: "",
       placeholder: "Type your question",
-      smileyLabels: ["Didn't\nstart", "Partially\ndone", "Mostly\ndone", "Completed\nit all"]
+      smileyLabels: ["Strongly\ndisagree", "Disagree", "Agree", "Strongly\nagree"]
     }
   };
   const CUSTOM_COLORS = ["#e0745c", "#e8b94a", "#7fa89a", "#8fd19e", "#9b8ec4", "#e39a54"];
   const MAX_CUSTOM_ANSWERS = 6;
   const MIN_CUSTOM_ANSWERS = 2;
+  const MAX_MULTI_QUESTIONS = 5;
+  const MIN_MULTI_QUESTIONS = 2;
 
   // ---- color helpers for the 1-10 scale and star rating (interpolate across the same palette) ----
   function hexToRgb(hex) { const n = parseInt(hex.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
@@ -414,6 +479,7 @@
   let customAnswers = ['', ''];
   let trafficLabels = ['Keep going', 'Slow down', 'Stop'];
   let setupPeriod = '';
+  let multiQuestions = ['', ''];
 
   // This is a single-device kiosk (one iPad by the door), so plain localStorage
   // is all that's needed -- no account, no login, no network required.
@@ -438,6 +504,7 @@
     customAnswers = ['', ''];
     trafficLabels = ['Keep going', 'Slow down', 'Stop'];
     setupPeriod = '';
+    multiQuestions = ['', ''];
     const initialQuestion = prefillQuestion || CHECKIN_TYPES[setupType].defaultQuestion;
 
     render(`
@@ -453,8 +520,16 @@
             `).join('')}
           </div>
 
-          <div class="eyebrow" style="margin-top:22px;">Question</div>
-          <input type="text" id="q-input" placeholder="${escapeAttr(CHECKIN_TYPES[setupType].placeholder)}" value="${escapeAttr(initialQuestion)}" />
+          <div id="single-question-block">
+            <div class="eyebrow" style="margin-top:22px;">Question</div>
+            <input type="text" id="q-input" placeholder="${escapeAttr(CHECKIN_TYPES[setupType].placeholder)}" value="${escapeAttr(initialQuestion)}" />
+          </div>
+
+          <div id="multi-question-block" style="display:none;">
+            <div class="eyebrow" style="margin-top:22px;">Questions</div>
+            <div id="multi-question-rows"></div>
+            <button class="btn-ghost" id="add-question-btn" type="button">+ Add another question</button>
+          </div>
 
           <div id="period-field">
             <div class="eyebrow" style="margin-top:22px;">Class period (optional)</div>
@@ -514,6 +589,10 @@
         input.placeholder = CHECKIN_TYPES[setupType].placeholder;
         const len = input.value.length;
         input.setSelectionRange(len, len);
+
+        const isMulti = setupType === 'multi';
+        document.getElementById('single-question-block').style.display = isMulti ? 'none' : 'block';
+        document.getElementById('multi-question-block').style.display = isMulti ? 'block' : 'none';
       };
     });
 
@@ -522,6 +601,34 @@
 
     const periodInput = document.getElementById('period-input');
     periodInput.oninput = () => { setupPeriod = periodInput.value; };
+
+    function renderMultiQuestionRows() {
+      const rowsEl = document.getElementById('multi-question-rows');
+      rowsEl.innerHTML = multiQuestions.map((val, i) => `
+        <div class="custom-row">
+          <input type="text" class="multi-question-input" data-idx="${i}" placeholder="Question ${i + 1}" value="${escapeAttr(val)}" />
+          <button class="remove-answer-btn" data-idx="${i}" type="button" ${multiQuestions.length <= MIN_MULTI_QUESTIONS ? 'disabled' : ''}>&times;</button>
+        </div>
+      `).join('');
+      rowsEl.querySelectorAll('.multi-question-input').forEach(inp => {
+        inp.oninput = () => { multiQuestions[parseInt(inp.dataset.idx, 10)] = inp.value; };
+      });
+      rowsEl.querySelectorAll('.remove-answer-btn').forEach(btn => {
+        btn.onclick = () => {
+          if (multiQuestions.length <= MIN_MULTI_QUESTIONS) return;
+          multiQuestions.splice(parseInt(btn.dataset.idx, 10), 1);
+          renderMultiQuestionRows();
+        };
+      });
+      document.getElementById('add-question-btn').disabled = multiQuestions.length >= MAX_MULTI_QUESTIONS;
+    }
+    renderMultiQuestionRows();
+
+    document.getElementById('add-question-btn').onclick = () => {
+      if (multiQuestions.length >= MAX_MULTI_QUESTIONS) return;
+      multiQuestions.push('');
+      renderMultiQuestionRows();
+    };
 
     const builder = document.getElementById('custom-builder');
     const trafficBuilder = document.getElementById('traffic-builder');
@@ -608,41 +715,70 @@
       trafficBuilder.style.display = 'none';
     };
 
+    function buildAnswerOptions() {
+      // Returns { mode, options } or null (and shows an error) if custom answers are invalid.
+      if (setupMode === 'custom') {
+        const filled = customAnswers.map(a => a.trim()).filter(a => a.length > 0);
+        if (filled.length < MIN_CUSTOM_ANSWERS) {
+          document.getElementById('q-error').innerHTML = '<div class="error-msg">Add at least two answer choices.</div>';
+          return null;
+        }
+        return { mode: 'custom', options: filled.map((text, i) => ({ id: i, label: text, color: CUSTOM_COLORS[i % CUSTOM_COLORS.length] })) };
+      } else if (setupMode === 'scale10') {
+        return { mode: 'scale10', options: buildScaleOptions() };
+      } else if (setupMode === 'star5') {
+        return { mode: 'star5', options: buildStarOptions() };
+      } else if (setupMode === 'yesno') {
+        return { mode: 'yesno', options: buildYesNoOptions() };
+      } else if (setupMode === 'traffic') {
+        return {
+          mode: 'traffic',
+          options: buildTrafficOptions().map((o, i) => ({ ...o, label: (trafficLabels[i] || '').trim() || o.label }))
+        };
+      }
+      return { mode: 'smiley', options: buildSmileyOptions(setupType) };
+    }
+
     document.getElementById('start-btn').onclick = async () => {
+      if (setupType === 'multi') {
+        const filledQuestions = multiQuestions.map(q => q.trim()).filter(q => q.length > 0);
+        if (filledQuestions.length < MIN_MULTI_QUESTIONS) {
+          document.getElementById('q-error').innerHTML = '<div class="error-msg">Add at least two questions.</div>';
+          return;
+        }
+        const built = buildAnswerOptions();
+        if (!built) return;
+
+        const counts = filledQuestions.map(() => {
+          const c = {};
+          built.options.forEach(o => { c[o.id] = 0; });
+          return c;
+        });
+
+        session = {
+          mode: 'multi',
+          answerMode: built.mode,
+          checkinType: 'multi',
+          period: (setupPeriod || '').trim(),
+          questions: filledQuestions,
+          options: built.options,
+          counts,
+          active: true
+        };
+        await saveSession();
+        showKiosk();
+        return;
+      }
+
       const val = document.getElementById('q-input').value.trim();
       if (!val) {
         document.getElementById('q-error').innerHTML = '<div class="error-msg">Type a question before starting.</div>';
         return;
       }
 
-      let options, mode;
-      if (setupMode === 'custom') {
-        const filled = customAnswers.map(a => a.trim()).filter(a => a.length > 0);
-        if (filled.length < MIN_CUSTOM_ANSWERS) {
-          document.getElementById('q-error').innerHTML = '<div class="error-msg">Add at least two answer choices.</div>';
-          return;
-        }
-        mode = 'custom';
-        options = filled.map((text, i) => ({ id: i, label: text, color: CUSTOM_COLORS[i % CUSTOM_COLORS.length] }));
-      } else if (setupMode === 'scale10') {
-        mode = 'scale10';
-        options = buildScaleOptions();
-      } else if (setupMode === 'star5') {
-        mode = 'star5';
-        options = buildStarOptions();
-      } else if (setupMode === 'yesno') {
-        mode = 'yesno';
-        options = buildYesNoOptions();
-      } else if (setupMode === 'traffic') {
-        mode = 'traffic';
-        options = buildTrafficOptions().map((o, i) => ({
-          ...o,
-          label: (trafficLabels[i] || '').trim() || o.label
-        }));
-      } else {
-        mode = 'smiley';
-        options = buildSmileyOptions(setupType);
-      }
+      const built = buildAnswerOptions();
+      if (!built) return;
+      const { mode, options } = built;
 
       const counts = {};
       options.forEach(o => { counts[o.id] = 0; });
@@ -701,6 +837,8 @@
   }
 
   function showKiosk() {
+    if (session.mode === 'multi') { showMultiKiosk(); return; }
+
     const isStars = session.mode === 'star5';
     const isSlider = session.mode === 'scale10';
     const count = session.options.length;
@@ -737,6 +875,101 @@
         };
       });
     }
+
+    setupTeacherDot();
+    setupStartOverDot();
+  }
+
+  // ---------------- multi-question kiosk ----------------
+  let multiAnswers = [];
+
+  function renderMultiSectionOptions(mode, options) {
+    if (mode === 'star5') {
+      return `
+        <div class="mq-star-row">
+          ${[1, 2, 3, 4, 5].map(i => `
+            <button class="mq-star-pick" data-val="${i}" aria-label="${i} star${i === 1 ? '' : 's'}">
+              <svg viewBox="0 0 24 24"><path d="${STAR_ICON_PATH}"/></svg>
+            </button>
+          `).join('')}
+        </div>`;
+    }
+    const iconSet = ICON_SETS[mode];
+    if (iconSet) {
+      return `
+        <div class="mq-options-row">
+          ${options.map(o => `
+            <button class="mq-icon-btn" data-val="${o.id}" aria-label="${escapeHtml(o.label.replace('\n', ' '))}">
+              ${iconSet[o.id]}
+            </button>
+          `).join('')}
+        </div>`;
+    }
+    return `
+      <div class="mq-options-row mq-wrap">
+        ${options.map(o => `
+          <button class="mq-chip-btn" data-val="${o.id}" style="--opt-color:${o.color};">${escapeHtml(o.label)}</button>
+        `).join('')}
+      </div>`;
+  }
+
+  function recordMultiAnswer(qIndex, val) {
+    multiAnswers[qIndex] = val;
+    if (multiAnswers.every(v => v !== null && v !== undefined)) {
+      multiAnswers.forEach((v, i) => {
+        session.counts[i][v] = (session.counts[i][v] || 0) + 1;
+      });
+      saveSession().then(() => setTimeout(showThanks, 400));
+    }
+  }
+
+  function showMultiKiosk() {
+    multiAnswers = session.questions.map(() => null);
+    const count = session.questions.length;
+    const layoutClass = (count === 3 || count === 4) ? 'mq-grid-2x2' : '';
+
+    render(`
+      <div class="kiosk-wrap mq-kiosk-wrap">
+        <div class="eyebrow">tap an answer for each question</div>
+        <div class="mq-sections ${layoutClass}">
+          ${session.questions.map((q, qi) => `
+            <div class="mq-section" id="mq-section-${qi}">
+              <div class="mq-question">${escapeHtml(q)}</div>
+              ${renderMultiSectionOptions(session.answerMode, session.options)}
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      <button class="start-over-btn" id="start-over-dot">Start over (double-tap)</button>
+      <button class="finish-btn" id="teacher-dot">Finish (double-tap)</button>
+    `);
+
+    session.questions.forEach((q, qi) => {
+      const sectionEl = document.getElementById('mq-section-' + qi);
+      if (session.answerMode === 'star5') {
+        const stars = Array.from(sectionEl.querySelectorAll('.mq-star-pick'));
+        stars.forEach(btn => {
+          btn.onclick = () => {
+            if (multiAnswers[qi] !== null && multiAnswers[qi] !== undefined) return;
+            const val = parseInt(btn.dataset.val, 10);
+            stars.forEach(b => b.classList.toggle('filled', parseInt(b.dataset.val, 10) <= val));
+            sectionEl.classList.add('mq-answered');
+            recordMultiAnswer(qi, val);
+          };
+        });
+      } else {
+        sectionEl.querySelectorAll('.mq-icon-btn, .mq-chip-btn').forEach(btn => {
+          btn.onclick = () => {
+            if (multiAnswers[qi] !== null && multiAnswers[qi] !== undefined) return;
+            const val = parseInt(btn.dataset.val, 10);
+            sectionEl.querySelectorAll('.mq-icon-btn, .mq-chip-btn').forEach(b => b.disabled = true);
+            btn.classList.add('mq-selected');
+            sectionEl.classList.add('mq-answered');
+            recordMultiAnswer(qi, val);
+          };
+        });
+      }
+    });
 
     setupTeacherDot();
     setupStartOverDot();
@@ -835,6 +1068,8 @@
 
   // ---------------- teacher panel ----------------
   function showTeacherPanel() {
+    if (session.mode === 'multi') { showMultiTeacherPanel(); return; }
+
     const iconSet = ICON_SETS[session.mode];
     const counts = session.counts;
     const total = session.options.reduce((sum, o) => sum + (counts[o.id] || 0), 0);
@@ -890,13 +1125,93 @@
     };
   }
 
+  function showMultiTeacherPanel() {
+    const iconSet = ICON_SETS[session.answerMode];
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop';
+    backdrop.innerHTML = `
+      <div class="modal-card">
+        <div class="eyebrow">Teacher view — Multiple Questions</div>
+        ${session.period ? `<div class="eyebrow" style="margin-top:6px;">Class period: ${escapeHtml(session.period)}</div>` : ''}
+        ${session.questions.map((q, qi) => {
+          const counts = session.counts[qi];
+          const total = session.options.reduce((sum, o) => sum + (counts[o.id] || 0), 0);
+          const max = Math.max(1, ...session.options.map(o => counts[o.id] || 0));
+          return `
+            <div class="mq-teacher-block">
+              <div class="chalk-title" style="font-size:16px; margin-top:16px;">${escapeHtml(q)}</div>
+              <div class="bars">
+                ${session.options.map(o => {
+                  const c = counts[o.id] || 0;
+                  const widthPct = Math.round((c / max) * 100);
+                  const marker = iconSet
+                    ? iconSet[o.id]
+                    : `<div class="bar-label" style="color:${o.color};">${escapeHtml(o.label)}</div>`;
+                  return `
+                    <div class="bar-row">
+                      ${marker}
+                      <div class="bar-track"><div class="bar-fill" style="width:${widthPct}%; background:${o.color};"></div></div>
+                      <div class="bar-count">${c}</div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+              <div class="total-line" style="margin-top:4px;">${total === 0 ? 'No responses yet.' : total + ' response' + (total === 1 ? '' : 's')}</div>
+            </div>
+          `;
+        }).join('')}
+        <div class="modal-actions">
+          <button class="btn-primary" id="close-panel">Back to kiosk</button>
+          <button class="btn-ghost" id="download-results">⬇ Download results (CSV)</button>
+          <button class="btn-ghost" id="new-question">Ask a new question</button>
+          <button class="btn-danger-outline" id="reset-counts">Reset counts (keep questions)</button>
+        </div>
+      </div>
+    `;
+    appRoot.appendChild(backdrop);
+
+    backdrop.querySelector('#close-panel').onclick = () => backdrop.remove();
+    backdrop.querySelector('#download-results').onclick = () => downloadResultsCsv();
+    backdrop.querySelector('#new-question').onclick = () => {
+      backdrop.remove();
+      showSetup('');
+    };
+    backdrop.querySelector('#reset-counts').onclick = async () => {
+      session.counts = session.questions.map(() => {
+        const c = {};
+        session.options.forEach(o => { c[o.id] = 0; });
+        return c;
+      });
+      await saveSession();
+      backdrop.remove();
+      showMultiTeacherPanel();
+    };
+  }
+
   function csvEscape(field) {
     const str = String(field === undefined || field === null ? '' : field);
     if (/[",\n]/.test(str)) return '"' + str.replace(/"/g, '""') + '"';
     return str;
   }
 
+  function triggerCsvDownload(rows, filenamePrefix) {
+    const csv = rows.map(r => r.map(csvEscape).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = new Date().toISOString().slice(0, 16).replace('T', '_').replace(':', '-');
+    a.href = url;
+    a.download = `${filenamePrefix}-${stamp}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
   function downloadResultsCsv() {
+    if (session.mode === 'multi') { downloadMultiResultsCsv(); return; }
+
     const counts = session.counts;
     const total = session.options.reduce((sum, o) => sum + (counts[o.id] || 0), 0);
     const typeLabel = (CHECKIN_TYPES[session.checkinType] || {}).label || 'Check-in';
@@ -913,18 +1228,24 @@
       [],
       ['Total responses', total]
     );
-    const csv = rows.map(r => r.map(csvEscape).join(',')).join('\n');
+    triggerCsvDownload(rows, 'checkin-results');
+  }
 
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    const stamp = new Date().toISOString().slice(0, 16).replace('T', '_').replace(':', '-');
-    a.href = url;
-    a.download = `checkin-results-${stamp}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  function downloadMultiResultsCsv() {
+    const rows = [['Check-in type', 'Multiple Questions']];
+    if (session.period) rows.push(['Class period', session.period]);
+    rows.push([]);
+
+    session.questions.forEach((q, qi) => {
+      const counts = session.counts[qi];
+      const total = session.options.reduce((sum, o) => sum + (counts[o.id] || 0), 0);
+      rows.push(['Question', q]);
+      rows.push(['Answer', 'Count']);
+      session.options.forEach(o => rows.push([o.label.replace(/\n/g, ' '), counts[o.id] || 0]));
+      rows.push(['Total responses', total]);
+      rows.push([]);
+    });
+    triggerCsvDownload(rows, 'checkin-results-multi');
   }
 
   // ---------------- boot ----------------
