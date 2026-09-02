@@ -91,6 +91,24 @@
 
   /* ---- mode toggle + custom answer builder ---- */
   .mode-toggle { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 18px; }
+
+  /* ---- ask-for-name toggle ---- */
+  .toggle-row { display: flex; align-items: flex-start; gap: 12px; }
+  .toggle-switch { position: relative; display: inline-block; width: 44px; height: 26px; flex-shrink: 0; margin-top: 2px; }
+  .toggle-switch input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider {
+    position: absolute; cursor: pointer; inset: 0; background: rgba(242,237,225,0.12);
+    border: 1.5px solid var(--line); border-radius: 999px; transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  .toggle-slider::before {
+    content: ""; position: absolute; height: 18px; width: 18px; left: 3px; top: 2.5px;
+    background: var(--chalk-dim); border-radius: 50%; transition: transform 0.15s ease, background 0.15s ease;
+  }
+  .toggle-switch input:checked + .toggle-slider { background: rgba(232,185,74,0.25); border-color: var(--yellow); }
+  .toggle-switch input:checked + .toggle-slider::before { transform: translateX(18px); background: var(--yellow); }
+  .toggle-label { flex: 1; }
+  .toggle-title { font-weight: 800; font-size: 14px; color: var(--chalk); }
+  .toggle-sub { font-size: 12px; color: var(--chalk-dim); margin-top: 2px; line-height: 1.35; }
   .mode-btn {
     background: rgba(242,237,225,0.04); border: 1.5px solid var(--line);
     color: var(--chalk-dim); font-weight: 700; font-size: 12.5px; padding: 12px 6px;
@@ -123,6 +141,23 @@
     max-width: 780px; margin-top: 8px;
   }
   .kiosk-sub { font-size: 13px; color: var(--chalk-dim); margin-top: 8px; letter-spacing: 0.3px; }
+
+  .name-field-wrap { margin-top: 18px; margin-bottom: 4px; display: flex; justify-content: center; width: 100%; }
+  .student-name-input {
+    width: 100%; max-width: 320px; font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 16px;
+    padding: 12px 16px; border-radius: 12px; border: 1.5px solid var(--line);
+    background: rgba(242,237,225,0.06); color: var(--chalk); text-align: center;
+  }
+  .student-name-input::placeholder { color: var(--chalk-dim); font-weight: 600; }
+  .student-name-input:focus { outline: none; border-color: var(--yellow); }
+  .student-name-input.shake { animation: nameShake 0.4s ease; border-color: var(--red); }
+  @keyframes nameShake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-6px); }
+    40% { transform: translateX(6px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+  }
 
   .answer-grid {
     display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px;
@@ -307,6 +342,16 @@
   .bar-fill { height: 100%; border-radius: 8px; transition: width 0.4s ease; }
   .bar-count { width: 40px; text-align: right; font-weight: 800; font-size: 14px; }
   .total-line { margin-top: 14px; font-size: 13px; color: var(--chalk-dim); text-align: center; }
+
+  .named-responses { width: 100%; }
+  .named-list { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; margin-top: 8px; }
+  .named-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    background: rgba(242,237,225,0.03); border: 1px solid var(--line); border-radius: 10px;
+    padding: 8px 12px; font-size: 13px;
+  }
+  .named-name { font-weight: 800; flex-shrink: 0; }
+  .named-answer { color: var(--chalk-dim); font-weight: 700; text-align: right; }
   .modal-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 20px; }
   .btn-danger-outline {
     background: transparent; color: #e0745c; border: 1.5px solid #e0745c;
@@ -480,6 +525,7 @@
   let trafficLabels = ['Keep going', 'Slow down', 'Stop'];
   let setupPeriod = '';
   let multiQuestions = ['', ''];
+  let setupAskName = false;
 
   // This is a single-device kiosk (one iPad by the door), so plain localStorage
   // is all that's needed -- no account, no login, no network required.
@@ -505,6 +551,7 @@
     trafficLabels = ['Keep going', 'Slow down', 'Stop'];
     setupPeriod = '';
     multiQuestions = ['', ''];
+    setupAskName = false;
     const initialQuestion = prefillQuestion || CHECKIN_TYPES[setupType].defaultQuestion;
 
     render(`
@@ -534,6 +581,17 @@
           <div id="period-field">
             <div class="eyebrow" style="margin-top:22px;">Class period (optional)</div>
             <input type="text" id="period-input" placeholder="e.g. 3" value="${escapeAttr(setupPeriod)}" />
+          </div>
+
+          <div class="toggle-row" style="margin-top:20px;">
+            <label class="toggle-switch">
+              <input type="checkbox" id="ask-name-toggle" ${setupAskName ? 'checked' : ''} />
+              <span class="toggle-slider"></span>
+            </label>
+            <div class="toggle-label">
+              <div class="toggle-title">Ask students for their name</div>
+              <div class="toggle-sub">Lets you see who needs extra help — off by default</div>
+            </div>
           </div>
 
           <div class="eyebrow" style="margin-top:22px;">Answer type</div>
@@ -601,6 +659,10 @@
 
     const periodInput = document.getElementById('period-input');
     periodInput.oninput = () => { setupPeriod = periodInput.value; };
+
+    document.getElementById('ask-name-toggle').onchange = (e) => {
+      setupAskName = e.target.checked;
+    };
 
     function renderMultiQuestionRows() {
       const rowsEl = document.getElementById('multi-question-rows');
@@ -760,9 +822,11 @@
           answerMode: built.mode,
           checkinType: 'multi',
           period: (setupPeriod || '').trim(),
+          askName: setupAskName,
           questions: filledQuestions,
           options: built.options,
           counts,
+          namedResponses: [],
           active: true
         };
         await saveSession();
@@ -788,8 +852,10 @@
         mode,
         checkinType: setupType,
         period: (setupPeriod || '').trim(),
+        askName: setupAskName,
         options,
         counts,
+        namedResponses: [],
         active: true
       };
       await saveSession();
@@ -836,6 +902,30 @@
       </div>`;
   }
 
+  function renderNameField() {
+    if (!session.askName) return '';
+    return `
+      <div class="name-field-wrap">
+        <input type="text" id="student-name-input" class="student-name-input" placeholder="Type your name" autocomplete="off" />
+      </div>`;
+  }
+
+  // Returns the trimmed name if valid, '__anon__' if a name isn't required,
+  // or null if a name is required but missing (and shakes the field to prompt the student).
+  function requireName() {
+    if (!session.askName) return '__anon__';
+    const input = document.getElementById('student-name-input');
+    if (!input) return '__anon__';
+    const val = input.value.trim();
+    if (!val) {
+      input.classList.add('shake');
+      input.focus();
+      setTimeout(() => input.classList.remove('shake'), 450);
+      return null;
+    }
+    return val;
+  }
+
   function showKiosk() {
     if (session.mode === 'multi') { showMultiKiosk(); return; }
 
@@ -854,6 +944,7 @@
       <div class="kiosk-wrap">
         <div class="eyebrow">tap your answer</div>
         <div class="kiosk-question">${escapeHtml(session.question)}</div>
+        ${renderNameField()}
         ${bodyHtml}
       </div>
       <button class="start-over-btn" id="start-over-dot">Start over (double-tap)</button>
@@ -867,9 +958,12 @@
     } else {
       root.querySelectorAll('.smiley-btn, .custom-btn').forEach(btn => {
         btn.onclick = async () => {
+          const name = requireName();
+          if (name === null) return;
           root.querySelectorAll('.smiley-btn, .custom-btn').forEach(b => b.disabled = true);
           const key = parseInt(btn.dataset.val, 10);
           session.counts[key] = (session.counts[key] || 0) + 1;
+          if (session.askName) session.namedResponses.push({ name, value: key });
           await saveSession();
           showThanks();
         };
@@ -919,6 +1013,11 @@
       multiAnswers.forEach((v, i) => {
         session.counts[i][v] = (session.counts[i][v] || 0) + 1;
       });
+      if (session.askName) {
+        const input = document.getElementById('student-name-input');
+        const name = input ? input.value.trim() : '';
+        if (name) session.namedResponses.push({ name, answers: multiAnswers.slice() });
+      }
       saveSession().then(() => setTimeout(showThanks, 400));
     }
   }
@@ -931,6 +1030,7 @@
     render(`
       <div class="kiosk-wrap mq-kiosk-wrap">
         <div class="eyebrow">tap an answer for each question</div>
+        ${renderNameField()}
         <div class="mq-sections ${layoutClass}">
           ${session.questions.map((q, qi) => `
             <div class="mq-section" id="mq-section-${qi}">
@@ -951,6 +1051,8 @@
         stars.forEach(btn => {
           btn.onclick = () => {
             if (multiAnswers[qi] !== null && multiAnswers[qi] !== undefined) return;
+            const name = requireName();
+            if (name === null) return;
             const val = parseInt(btn.dataset.val, 10);
             stars.forEach(b => b.classList.toggle('filled', parseInt(b.dataset.val, 10) <= val));
             sectionEl.classList.add('mq-answered');
@@ -961,6 +1063,8 @@
         sectionEl.querySelectorAll('.mq-icon-btn, .mq-chip-btn').forEach(btn => {
           btn.onclick = () => {
             if (multiAnswers[qi] !== null && multiAnswers[qi] !== undefined) return;
+            const name = requireName();
+            if (name === null) return;
             const val = parseInt(btn.dataset.val, 10);
             sectionEl.querySelectorAll('.mq-icon-btn, .mq-chip-btn').forEach(b => b.disabled = true);
             btn.classList.add('mq-selected');
@@ -989,11 +1093,14 @@
 
     slider.onchange = async () => {
       if (locked) return;
+      const name = requireName();
+      if (name === null) return;
       locked = true;
       slider.disabled = true;
       wrap.classList.add('locked');
       const val = parseInt(slider.value, 10);
       session.counts[val] = (session.counts[val] || 0) + 1;
+      if (session.askName) session.namedResponses.push({ name, value: val });
       await saveSession();
       setTimeout(showThanks, 350);
     };
@@ -1008,11 +1115,14 @@
     stars.forEach(btn => {
       btn.onclick = async () => {
         if (locked) return;
+        const name = requireName();
+        if (name === null) return;
         locked = true;
         const val = parseInt(btn.dataset.val, 10);
         stars.forEach(b => b.classList.toggle('filled', parseInt(b.dataset.val, 10) <= val));
         picker.classList.add('locked');
         session.counts[val] = (session.counts[val] || 0) + 1;
+        if (session.askName) session.namedResponses.push({ name, value: val });
         await saveSession();
         setTimeout(showThanks, 350);
       };
@@ -1067,6 +1177,52 @@
   }
 
   // ---------------- teacher panel ----------------
+  function optionLabel(o) {
+    return o.label.replace(/\n/g, ' ');
+  }
+
+  function renderNamedResponsesList() {
+    if (!session.askName || !session.namedResponses || !session.namedResponses.length) return '';
+    return `
+      <div class="named-responses">
+        <div class="eyebrow" style="margin-top:18px; text-align:left;">Student responses</div>
+        <div class="named-list">
+          ${session.namedResponses.map(r => {
+            const opt = session.options.find(o => o.id === r.value);
+            const label = opt ? optionLabel(opt) : '';
+            const color = opt ? opt.color : 'inherit';
+            return `
+              <div class="named-row">
+                <span class="named-name">${escapeHtml(r.name)}</span>
+                <span class="named-answer" style="color:${color};">${escapeHtml(label)}</span>
+              </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+  }
+
+  function renderMultiNamedResponsesList() {
+    if (!session.askName || !session.namedResponses || !session.namedResponses.length) return '';
+    return `
+      <div class="named-responses">
+        <div class="eyebrow" style="margin-top:18px; text-align:left;">Student responses</div>
+        <div class="named-list">
+          ${session.namedResponses.map(r => {
+            const parts = r.answers.map((val, qi) => {
+              const opt = session.options.find(o => o.id === val);
+              const label = opt ? optionLabel(opt) : '';
+              return `Q${qi + 1}: ${escapeHtml(label)}`;
+            }).join(' &nbsp;•&nbsp; ');
+            return `
+              <div class="named-row">
+                <span class="named-name">${escapeHtml(r.name)}</span>
+                <span class="named-answer">${parts}</span>
+              </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+  }
+
   function showTeacherPanel() {
     if (session.mode === 'multi') { showMultiTeacherPanel(); return; }
 
@@ -1099,6 +1255,7 @@
           }).join('')}
         </div>
         <div class="total-line">${total === 0 ? 'No responses yet.' : total + ' response' + (total === 1 ? '' : 's') + ' so far'}</div>
+        ${renderNamedResponsesList()}
         <div class="modal-actions">
           <button class="btn-primary" id="close-panel">Back to kiosk</button>
           <button class="btn-ghost" id="download-results">⬇ Download results (CSV)</button>
@@ -1119,6 +1276,7 @@
       const counts = {};
       session.options.forEach(o => { counts[o.id] = 0; });
       session.counts = counts;
+      session.namedResponses = [];
       await saveSession();
       backdrop.remove();
       showTeacherPanel();
@@ -1161,6 +1319,7 @@
             </div>
           `;
         }).join('')}
+        ${renderMultiNamedResponsesList()}
         <div class="modal-actions">
           <button class="btn-primary" id="close-panel">Back to kiosk</button>
           <button class="btn-ghost" id="download-results">⬇ Download results (CSV)</button>
@@ -1183,6 +1342,7 @@
         session.options.forEach(o => { c[o.id] = 0; });
         return c;
       });
+      session.namedResponses = [];
       await saveSession();
       backdrop.remove();
       showMultiTeacherPanel();
@@ -1228,6 +1388,13 @@
       [],
       ['Total responses', total]
     );
+    if (session.askName && session.namedResponses && session.namedResponses.length) {
+      rows.push([], ['Student', 'Answer']);
+      session.namedResponses.forEach(r => {
+        const opt = session.options.find(o => o.id === r.value);
+        rows.push([r.name, opt ? opt.label.replace(/\n/g, ' ') : '']);
+      });
+    }
     triggerCsvDownload(rows, 'checkin-results');
   }
 
@@ -1245,6 +1412,16 @@
       rows.push(['Total responses', total]);
       rows.push([]);
     });
+    if (session.askName && session.namedResponses && session.namedResponses.length) {
+      rows.push(['Student', ...session.questions.map((q, qi) => 'Q' + (qi + 1))]);
+      session.namedResponses.forEach(r => {
+        const answerLabels = r.answers.map(val => {
+          const opt = session.options.find(o => o.id === val);
+          return opt ? opt.label.replace(/\n/g, ' ') : '';
+        });
+        rows.push([r.name, ...answerLabels]);
+      });
+    }
     triggerCsvDownload(rows, 'checkin-results-multi');
   }
 
